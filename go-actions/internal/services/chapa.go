@@ -105,41 +105,6 @@ func InitializePayment(req ChapaInitRequest) (string, error) {
 	return successResp.Data.CheckoutURL, nil
 }
 
-// func InitializePayment(req ChapaInitRequest) (string, error) {
-// 	chapaSecretKey := os.Getenv("CHAPA_SECRET_KEY")
-// 	if chapaSecretKey == "" {
-// 		return "", fmt.Errorf("CHAPA_SECRET_KEY is not set")
-// 	}
-
-// 	client := resty.New()
-// 	var successResp ChapaInitResponse
-// 	var errorResp chapaAPIError
-
-// 	resp, err := client.R().
-// 		SetAuthToken(chapaSecretKey).
-// 		SetHeader("Content-Type", "application/json").
-// 		SetBody(req).
-// 		SetResult(&successResp). // Tell resty to unmarshal into this struct on success
-// 		SetError(&errorResp).    // Or into this one on error
-// 		Post(chapaAPIBaseURL + "/transaction/initialize")
-
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to execute request to Chapa: %w", err)
-// 	}
-
-// 	if resp.IsError() {
-// 		return "", fmt.Errorf("chapa API returned an error: %s", errorResp.Message)
-// 	}
-
-// 	if successResp.Status != "success" || successResp.Data.CheckoutURL == "" {
-// 		return "", fmt.Errorf("chapa initialization failed with message: %s", successResp.Message)
-// 	}
-
-// 	return successResp.Data.CheckoutURL, nil
-// }
-
-// VerifyChapaTransaction calls the Chapa API to confirm the status of a transaction.
-// This is a crucial security step for your webhook.
 func VerifyChapaTransaction(txRef string) (bool, *ChapaVerifyResponse, error) {
 	chapaSecretKey := os.Getenv("CHAPA_SECRET_KEY")
 	if chapaSecretKey == "" {

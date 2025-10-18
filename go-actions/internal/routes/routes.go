@@ -55,7 +55,7 @@ func SetupRouter() *gin.Engine {
 	router.POST("/register", handlers.HandleHasuraRegister)
 	router.POST("/uploadImage", handlers.HandleHasuraUpload)
 
-	router.POST("/initiatePayment", handlers.HandleInitiatePayment)
+	router.POST("/initiate-payment", handlers.HandleInitiatePayment)
 
 	webhooks := router.Group("/webhooks")
 	{
