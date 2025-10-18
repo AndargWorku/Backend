@@ -1,0 +1,184 @@
+table:
+  name: recipes
+  schema: public
+object_relationships:
+  - name: category
+    using:
+      foreign_key_constraint_on: category_id
+  - name: user
+    using:
+      foreign_key_constraint_on: user_id
+array_relationships:
+  - name: comments
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: comments
+          schema: public
+  - name: instructions
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: instructions
+          schema: public
+  - name: recipe_categories
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: recipe_categories
+          schema: public
+  - name: recipe_images
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: recipe_images
+          schema: public
+  - name: recipe_ingredients
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: recipe_ingredients
+          schema: public
+  - name: recipe_likes
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: recipe_likes
+          schema: public
+  - name: recipe_ratings
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: recipe_ratings
+          schema: public
+  - name: user_bookmarks
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: user_bookmarks
+          schema: public
+  - name: user_purchased_recipes
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: user_purchased_recipes
+          schema: public
+computed_fields:
+  - name: average_rating
+    definition:
+      function:
+        name: recipe_average_rating
+        schema: public
+    comment: Calculates the average star rating from the recipe_ratings table
+  - name: total_comments
+    definition:
+      function:
+        name: recipe_total_comments
+        schema: public
+    comment: Calculates the total number of comments from the comments table
+  - name: total_likes
+    definition:
+      function:
+        name: recipe_total_likes
+        schema: public
+    comment: Calculates the total number of likes from the recipe_likes table
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id
+      set:
+        user_id: x-hasura-user-id
+      columns:
+        - category_id
+        - cook_time_minutes
+        - description
+        - featured_image_url
+        - is_premium
+        - prep_time_minutes
+        - price
+        - servings
+        - title
+    comment: ""
+select_permissions:
+  - role: Anonymous
+    permission:
+      columns:
+        - is_premium
+        - category_id
+        - cook_time_minutes
+        - prep_time_minutes
+        - servings
+        - price
+        - description
+        - featured_image_url
+        - title
+        - created_at
+        - updated_at
+        - id
+        - user_id
+      computed_fields:
+        - average_rating
+        - total_comments
+        - total_likes
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - is_premium
+        - category_id
+        - cook_time_minutes
+        - prep_time_minutes
+        - servings
+        - price
+        - description
+        - featured_image_url
+        - title
+        - created_at
+        - updated_at
+        - id
+        - user_id
+      computed_fields:
+        - average_rating
+        - total_comments
+        - total_likes
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - category_id
+        - cook_time_minutes
+        - description
+        - featured_image_url
+        - is_premium
+        - prep_time_minutes
+        - price
+        - servings
+        - title
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      check: null
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+    comment: ""

@@ -1,0 +1,81 @@
+table:
+  name: users
+  schema: public
+array_relationships:
+  - name: comments
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: comments
+          schema: public
+  - name: recipe_likes
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: recipe_likes
+          schema: public
+  - name: recipe_ratings
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: recipe_ratings
+          schema: public
+  - name: recipes
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: recipes
+          schema: public
+  - name: user_bookmarks
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: user_bookmarks
+          schema: public
+  - name: user_purchased_recipes
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: user_purchased_recipes
+          schema: public
+select_permissions:
+  - role: Anonymous
+    permission:
+      columns:
+        - created_at
+        - id
+        - photo_url
+        - username
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - created_at
+        - email
+        - id
+        - password_hash
+        - photo_url
+        - username
+      filter:
+        id:
+          _eq: X-Hasura-User-Id
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - photo_url
+        - username
+      filter:
+        id:
+          _eq: X-Hasura-User-Id
+      check: null
+    comment: ""

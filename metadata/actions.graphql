@@ -1,0 +1,48 @@
+type Mutation {
+  initiatePayment(
+    recipeId: uuid!
+  ): InitiatePaymentOutput
+}
+
+type Mutation {
+  login(
+    email: String!
+    password: String!
+  ): LoginOutput
+}
+
+type Mutation {
+  register(
+    username: String!
+    email: String!
+    password: String!
+  ): RegisterOutput
+}
+
+type Mutation {
+  uploadImage(
+    imageDataBase64: String!
+    filename: String!
+  ): UploadResponse
+}
+
+type LoginOutput {
+  token: String!
+}
+
+type RegisterOutput {
+  token: String!
+}
+
+type UploadResponse {
+  imageUrl: String!
+}
+
+type InitiatePaymentOutput {
+  checkoutUrl: String!
+}
+
+type CreateSubscriptionOutput {
+  checkoutUrl: String!
+}
+

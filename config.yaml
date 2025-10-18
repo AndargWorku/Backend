@@ -1,0 +1,16 @@
+version: "3"
+
+endpoint: http://localhost:8080
+
+metadata_directory: metadata
+
+admin_secret: andarg01
+# version: 3
+# endpoint: http://localhost:8080
+# metadata_directory: metadata
+
+# admin_secret: andarg01
+
+# actions:
+#   kind: synchronous
+#   handler_webhook_baseurl: http://go-actions:8001

@@ -1,0 +1,5 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- -- Create indexes for faster lookups.
+-- CREATE INDEX IF NOT EXISTS idx_payments_user_id ON public.payments(user_id);
+-- CREATE INDEX IF NOT EXISTS idx_payments_tx_ref ON public.payments(tx_ref);

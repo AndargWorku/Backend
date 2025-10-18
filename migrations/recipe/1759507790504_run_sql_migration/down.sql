@@ -1,0 +1,18 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- -- This table stores each user's subscription status.
+-- CREATE TABLE "subscriptions" (
+--     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+--     "user_id" UUID NOT NULL UNIQUE, -- A user has only one subscription record
+--     "stripe_customer_id" TEXT UNIQUE NOT NULL, -- The customer ID in Stripe
+--     "stripe_subscription_id" TEXT UNIQUE NOT NULL, -- The subscription ID in Stripe
+--     "status" TEXT NOT NULL, -- e.g., 'active', 'canceled', 'past_due'
+--     "current_period_end" TIMESTAMPTZ NOT NULL, -- When the subscription expires
+--     "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+--     "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+--     PRIMARY KEY ("id"),
+--     FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade
+-- );
+--
+-- -- Index for fast lookups
+-- CREATE INDEX ON "public"."subscriptions" ("user_id");

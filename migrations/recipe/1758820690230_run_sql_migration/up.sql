@@ -1,0 +1,9 @@
+CREATE TABLE "user_purchased_recipes" (
+    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "user_id" UUID NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "recipe_id" UUID NOT NULL REFERENCES "recipes"("id") ON DELETE CASCADE,
+    "amount_paid" NUMERIC(10, 2) NOT NULL,
+    "chapa_transaction_ref" TEXT UNIQUE NOT NULL,
+    "purchased_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE ("user_id", "recipe_id") -- A user can only buy a recipe once
+);

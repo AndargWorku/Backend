@@ -1,0 +1,25 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- CREATE OR REPLACE FUNCTION find_or_create_ingredient(ingredient_name TEXT)
+-- RETURNS SETOF ingredients AS $$
+-- DECLARE
+--     ingredient_id INT;
+-- BEGIN
+--     -- Attempt to insert the new ingredient. If it already exists, do nothing.
+--     WITH ins AS (
+--         INSERT INTO ingredients (name)
+--         VALUES (ingredient_name)
+--         ON CONFLICT (name) DO NOTHING
+--         RETURNING id
+--     )
+--     SELECT id INTO ingredient_id FROM ins;
+--
+--     -- If the insert did nothing, find the existing ingredient's ID.
+--     IF ingredient_id IS NULL THEN
+--         SELECT id INTO ingredient_id FROM ingredients WHERE ingredients.name = ingredient_name;
+--     END IF;
+--
+--     -- Return the full row for the final ingredient.
+--     RETURN QUERY SELECT * FROM ingredients WHERE ingredients.id = ingredient_id;
+-- END;
+-- $$ LANGUAGE plpgsql;

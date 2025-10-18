@@ -1,0 +1,21 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- -- This is the corrected, trackable version of the function.
+-- -- Notice the return type is now "RETURNS SETOF recipes".
+-- CREATE OR REPLACE FUNCTION filter_recipes_by_ingredients(ingredient_names TEXT[])
+-- RETURNS SETOF recipes AS $$
+-- BEGIN
+--     -- This function now returns the full recipe rows directly.
+--     RETURN QUERY
+--     SELECT *
+--     FROM recipes
+--     -- We find recipes where the ID is in the subquery of matching recipe IDs.
+--     WHERE id IN (
+--         SELECT recipe_id
+--         FROM ingredients
+--         WHERE name = ANY(ingredient_names)
+--         GROUP BY recipe_id
+--         HAVING COUNT(DISTINCT name) = array_length(ingredient_names, 1)
+--     );
+-- END;
+-- $$ LANGUAGE plpgsql STABLE;

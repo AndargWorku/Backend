@@ -1,0 +1,66 @@
+-- ========= Function 1: Get Unique Categories for Homepage =========
+-- This function is essential for your requirement: "categories must be listed on home page".
+-- It returns a clean, unique list of category names from your 'categories' table.
+
+CREATE OR REPLACE FUNCTION get_unique_categories()
+RETURNS SETOF categories AS $$
+BEGIN
+    RETURN QUERY
+    SELECT DISTINCT ON (name) *
+    FROM categories
+    ORDER BY name ASC;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+
+-- ========= Function 2: Filter Recipes by Category Name =========
+-- This function allows you to "browse by category" using the category's name.
+
+CREATE OR REPLACE FUNCTION get_recipes_by_category_name(category_name TEXT)
+RETURNS SETOF recipes AS $$
+BEGIN
+    RETURN QUERY
+    SELECT *
+    FROM recipes
+    WHERE id IN (
+        SELECT recipe_id FROM categories WHERE name = category_name
+    );
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+
+-- ========= Function 3: Filter Recipes by Creator's Username =========
+-- This fulfills your "browse by creator" requirement using a user-friendly name.
+
+CREATE OR REPLACE FUNCTION get_recipes_by_username(creator_username TEXT)
+RETURNS SETOF recipes AS $$
+BEGIN
+    RETURN QUERY
+    SELECT r.*
+    FROM recipes AS r
+    JOIN users AS u ON r.user_id = u.id
+    WHERE u.username = creator_username
+    ORDER BY r.created_at DESC;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+
+-- ========= Function 4: Filter Recipes by a List of Ingredients =========
+-- This is the most complex and powerful function. It fulfills your "filter recipes by ingredients"
+-- requirement by finding recipes that contain ALL of the specified ingredients.
+
+CREATE OR REPLACE FUNCTION filter_recipes_by_ingredients(ingredient_names TEXT[])
+RETURNS SETOF recipes AS $$
+BEGIN
+    RETURN QUERY
+    SELECT *
+    FROM recipes
+    WHERE id IN (
+        SELECT recipe_id
+        FROM ingredients
+        WHERE name = ANY(ingredient_names)
+        GROUP BY recipe_id
+        HAVING COUNT(DISTINCT name) = array_length(ingredient_names, 1)
+    );
+END;
+$$ LANGUAGE plpgsql STABLE;

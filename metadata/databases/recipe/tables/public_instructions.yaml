@@ -1,0 +1,74 @@
+table:
+  name: instructions
+  schema: public
+object_relationships:
+  - name: recipe
+    using:
+      foreign_key_constraint_on: recipe_id
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        recipe:
+          user_id:
+            _eq: X-Hasura-User-Id
+      columns:
+        - description
+        - recipe_id
+        - step_number
+    comment: ""
+select_permissions:
+  - role: Anonymous
+    permission:
+      columns:
+        - id
+        - step_number
+        - description
+        - recipe_id
+      filter:
+        recipe:
+          is_premium:
+            _eq: false
+      allow_aggregations: true
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - id
+        - step_number
+        - description
+        - recipe_id
+      filter:
+        _or:
+          - recipe:
+              is_premium:
+                _eq: false
+          - recipe:
+              user_id:
+                _eq: X-Hasura-User-Id
+          - recipe:
+              user_purchased_recipes:
+                user_id:
+                  _eq: X-Hasura-User-Id
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - description
+        - step_number
+      filter:
+        recipe:
+          user_id:
+            _eq: X-Hasura-User-Id
+      check: null
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        recipe:
+          user_id:
+            _eq: X-Hasura-User-Id
+    comment: ""

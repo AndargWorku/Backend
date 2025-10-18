@@ -1,0 +1,4 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- ALTER TABLE "public"."users"
+-- ADD COLUMN "photo_url" text NOT NULL DEFAULT 'https://example.com/default-avatar.png';

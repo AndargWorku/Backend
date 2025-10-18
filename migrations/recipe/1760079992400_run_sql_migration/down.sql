@@ -1,0 +1,5 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- ALTER TABLE public.users
+-- ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'free',
+-- ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMPTZ;

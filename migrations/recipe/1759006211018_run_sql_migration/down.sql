@@ -1,0 +1,3 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- CREATE TABLE "categories" ( "id" SERIAL PRIMARY KEY, "name" TEXT UNIQUE NOT NULL, "slug" TEXT UNIQUE NOT NULL );

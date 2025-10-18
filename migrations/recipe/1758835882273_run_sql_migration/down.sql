@@ -1,0 +1,11 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- -- ========= PART 1: TABLE CREATION =========
+--
+--
+-- -- Stores a unique, clean list of all categories.
+-- CREATE TABLE "categories" (
+--     "id" SERIAL PRIMARY KEY,
+--     "name" TEXT UNIQUE NOT NULL,
+--     "slug" TEXT UNIQUE NOT NULL
+-- );

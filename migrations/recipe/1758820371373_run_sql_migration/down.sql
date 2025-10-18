@@ -1,0 +1,8 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- CREATE TABLE "instructions" (
+--     "id" SERIAL PRIMARY KEY,
+--     "recipe_id" UUID NOT NULL REFERENCES "recipes"("id") ON DELETE CASCADE,
+--     "step_number" INTEGER NOT NULL,
+--     "description" TEXT NOT NULL
+-- );

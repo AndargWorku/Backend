@@ -1,0 +1,51 @@
+
+
+# docker-compose.yml (CORRECTED FOR DOCKER-ONLY SETUP)
+
+services:
+  graphql-engine:
+    image: hasura/graphql-engine:v2.38.0 # Using a slightly newer, stable version
+    container_name: recipe_graphql_engine
+    ports:
+      - "8080:8080"
+    restart: always
+    networks:
+      - recipes_network
+    env_file:
+      - ./.env 
+    environment:
+     
+      # ACTION_BASE_URL: "http://go-actions:8002"
+
+    
+      HASURA_GRAPHQL_DATABASE_URL: ${DATABASE_URL}
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
+      HASURA_GRAPHQL_JWT_SECRET: ${HASURA_GRAPHQL_JWT_SECRET}
+
+      HASURA_GRAPHQL_ACTION_BASE_URL: http://go-actions:8002
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_LOG_LEVEL: "debug"
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: "Anonymous"
+      HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: "false"
+      HASURA_GRAPHQL_CORS_DOMAIN: "http://localhost:3000"
+
+  go-actions:
+    container_name: recipe_go_actions
+    build:
+      context: ./go-actions 
+    restart: always
+    ports:
+      - "8002:8002"
+    networks:
+      - recipes_network
+    depends_on:
+      - graphql-engine 
+    env_file:
+      - ./go-actions/.env
+
+networks:
+  recipes_network:
+    driver: bridge
+
+

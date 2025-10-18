@@ -1,0 +1,7 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- CREATE TABLE "recipe_likes" (
+--     "recipe_id" UUID NOT NULL REFERENCES "recipes"("id") ON DELETE CASCADE,
+--     "user_id" UUID NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+--     PRIMARY KEY ("recipe_id", "user_id")
+-- );

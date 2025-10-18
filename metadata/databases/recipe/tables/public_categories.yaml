@@ -1,0 +1,37 @@
+table:
+  name: categories
+  schema: public
+array_relationships:
+  - name: recipe_categories
+    using:
+      foreign_key_constraint_on:
+        column: category_id
+        table:
+          name: recipe_categories
+          schema: public
+  - name: recipes
+    using:
+      foreign_key_constraint_on:
+        column: category_id
+        table:
+          name: recipes
+          schema: public
+select_permissions:
+  - role: Anonymous
+    permission:
+      columns:
+        - id
+        - name
+        - slug
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - id
+        - name
+        - slug
+      filter: {}
+      allow_aggregations: true
+    comment: ""

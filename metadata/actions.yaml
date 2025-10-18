@@ -1,0 +1,37 @@
+actions:
+  - name: initiatePayment
+    definition:
+      kind: synchronous
+      handler: http://go-actions:8002/initiatePayment
+      forward_client_headers: true
+    permissions:
+      - role: user
+  - name: login
+    definition:
+      kind: synchronous
+      handler: http://go-actions:8002/login
+    permissions:
+      - role: Anonymous
+  - name: register
+    definition:
+      kind: synchronous
+      handler: http://go-actions:8002/register
+    permissions:
+      - role: Anonymous
+  - name: uploadImage
+    definition:
+      kind: synchronous
+      handler: http://go-actions:8002/uploadImage
+      forward_client_headers: true
+    permissions:
+      - role: user
+custom_types:
+  enums: []
+  input_objects: []
+  objects:
+    - name: LoginOutput
+    - name: RegisterOutput
+    - name: UploadResponse
+    - name: InitiatePaymentOutput
+    - name: CreateSubscriptionOutput
+  scalars: []

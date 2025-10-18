@@ -1,0 +1,6 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- CREATE OR REPLACE FUNCTION recipe_total_comments(recipe_row recipes)
+-- RETURNS BIGINT AS $$
+--   SELECT COUNT(*) FROM "comments" WHERE recipe_id = recipe_row.id;
+-- $$ LANGUAGE sql STABLE;
