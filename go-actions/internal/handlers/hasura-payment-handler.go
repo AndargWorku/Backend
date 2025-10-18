@@ -80,7 +80,7 @@ func HandleInitiatePayment(c *gin.Context) {
 		CallbackURL: os.Getenv("BACKEND_PUBLIC_URL") + "/webhooks/chapa",
 		ReturnURL:   os.Getenv("FRONTEND_URL") + "/payment/status?status=success&recipe_id=" + payload.Input.RecipeID,
 		CustomTitle: "SavoryShare Recipe Purchase",
-		CustomDesc:  fmt.Sprintf("Payment for recipe: %s", details.Recipe.Title),
+		CustomDesc:  "Food of the day",
 	}
 
 	checkoutURL, err := services.InitializePayment(chapaReq)
