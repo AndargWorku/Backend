@@ -1,15 +1,23 @@
-# Stage 1: Build the Go binary
-FROM golang:1.24-alpine AS builder
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/api/main.go
+# Use official Go image
+FROM golang:1.22
 
-# Stage 2: Create a minimal final image
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/server .
+# Set working directory inside container
+WORKDIR /app
+
+# Copy go.mod and go.sum first
+COPY go.mod go.sum ./
+
+# Download Go modules
+RUN go mod download
+
+# Copy the rest of your application
+COPY . .
+
+# Build the app
+RUN go build -o main .
+
+# Expose port
 EXPOSE 8002
-CMD ["./server"]
+
+# Run the binary
+CMD ["./cmd/api/main"]
