@@ -50,6 +50,8 @@ func HandleInitiatePayment(c *gin.Context) {
 		return
 	}
 
+	log.Println(data)
+
 	var details struct {
 		Recipe *struct {
 			Title string
