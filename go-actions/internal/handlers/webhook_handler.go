@@ -3,6 +3,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -13,6 +14,7 @@ import (
 )
 
 func HandleChapaWebhook(c *gin.Context) {
+	fmt.Println("hello")
 	// Chapa sends the transaction reference as a query parameter in its callback
 	txRef := c.Query("tx_ref")
 	if txRef == "" {

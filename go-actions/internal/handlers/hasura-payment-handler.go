@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -61,11 +60,11 @@ func HandleInitiatePayment(c *gin.Context) {
 			Username string
 		} `json:"users_by_pk"`
 	}
-	if err := json.Unmarshal(data, &details); err != nil || details.Recipe == nil || details.User == nil {
-		log.Printf("WARN: Recipe or user not found for recipeId: %s, userId: %s", payload.Input.RecipeID, userID)
-		returnHasuraError(c, "Recipe or user not found.", 404)
-		return
-	}
+	// if err := json.Unmarshal(data, &details); err != nil || details.Recipe == nil || details.User == nil {
+	// 	log.Printf("WARN: Recipe or user not found for recipeId: %s, userId: %s", payload.Input.RecipeID, userID)
+	// 	returnHasuraError(c, "Recipe or user not found.", 404)
+	// 	return
+	// }
 
 	txRef := fmt.Sprintf("RECIPE-%s-%s-%d", userID, payload.Input.RecipeID, time.Now().Unix())
 
