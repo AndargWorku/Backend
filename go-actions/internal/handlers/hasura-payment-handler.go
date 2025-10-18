@@ -71,7 +71,7 @@ func HandleInitiatePayment(c *gin.Context) {
 	txRef := fmt.Sprintf("RECIPE-%s-%s-%d", userID, payload.Input.RecipeID, time.Now().Unix())
 
 	chapaReq := services.ChapaInitRequest{
-		Amount:      fmt.Sprintf("%.2f", details.Recipe.Price),
+		Amount:      "45",
 		Currency:    "ETB",
 		Email:       details.User.Email,
 		FirstName:   details.User.Username,
