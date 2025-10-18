@@ -62,6 +62,7 @@ func HandleInitiatePayment(c *gin.Context) {
 			Username string
 		} `json:"users_by_pk"`
 	}
+	log.Println(details)
 	// if err := json.Unmarshal(data, &details); err != nil || details.Recipe == nil || details.User == nil {
 	// 	log.Printf("WARN: Recipe or user not found for recipeId: %s, userId: %s", payload.Input.RecipeID, userID)
 	// 	returnHasuraError(c, "Recipe or user not found.", 404)
@@ -73,12 +74,12 @@ func HandleInitiatePayment(c *gin.Context) {
 	chapaReq := services.ChapaInitRequest{
 		Amount:      "45",
 		Currency:    "ETB",
-		Email:       details.User.Email,
-		FirstName:   details.User.Username,
+		Email:       "aman@bam.com",
+		FirstName:   "Amanuel",
 		LastName:    "User",
 		TxRef:       txRef,
 		CallbackURL: os.Getenv("BACKEND_PUBLIC_URL") + "/webhooks/chapa",
-		ReturnURL:   os.Getenv("FRONTEND_URL") + "/payment/status?status=success&recipe_id=" + payload.Input.RecipeID,
+		ReturnURL:   os.Getenv("FRONTEND_URL") + "/payment/status?status=success&recipe_id=61877925-2dad-4bfc-b4c9-f23c2388bfc0",
 		CustomTitle: "SavoryShare Recipe Purchase",
 		CustomDesc:  "Food of the day",
 	}
