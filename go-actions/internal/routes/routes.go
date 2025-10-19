@@ -58,8 +58,15 @@ func SetupRouter() *gin.Engine {
 	router.POST("/initiate-payment", handlers.HandleInitiatePayment)
 
 	webhooks := router.Group("/webhooks")
+
 	{
+		// --- THE FIX ---
+		// Handle both GET and POST requests for the Chapa webhook.
+		// Chapa's documentation states they can use GET for the initial callback
+		// and POST for subsequent server-to-server notifications.
+		webhooks.GET("/chapa", handlers.HandleChapaWebhook)
 		webhooks.POST("/chapa", handlers.HandleChapaWebhook)
+		// webhooks.POST("/chapa", handlers.HandleChapaWebhook)
 	}
 
 	log.Println("✅ Registered API Routes:")
