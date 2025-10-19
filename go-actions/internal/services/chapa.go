@@ -1,4 +1,3 @@
-// internal/services/chapa.go (Minor adjustments for robustness and logging)
 package services
 
 import (
@@ -6,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/go-resty/resty/v2" // A robust HTTP client library
+	"github.com/go-resty/resty/v2"
 )
 
 const (
@@ -21,8 +20,8 @@ type ChapaInitRequest struct {
 	FirstName   string `json:"first_name"`
 	LastName    string `json:"last_name"`
 	TxRef       string `json:"tx_ref"`
-	CallbackURL string `json:"callback_url"`
-	ReturnURL   string `json:"return_url"`
+	CallbackURL string `json:"callback_url"` // Webhook URL
+	ReturnURL   string `json:"return_url"`   // Frontend redirect after payment
 	CustomTitle string `json:"customization[title]"`
 	CustomDesc  string `json:"customization[description]"`
 }
@@ -47,9 +46,7 @@ type ChapaVerifyResponse struct {
 		Currency  string  `json:"currency"`
 		Amount    float64 `json:"amount"` // Amount can be float here
 		Status    string  `json:"status"` // E.g., "success", "failed", "pending"
-		TxRef     string  `json:"tx_ref"` // Add tx_ref here for logging/debugging
-		// You can add Meta field here if you pass it during initialization
-		// Meta map[string]interface{} `json:"meta"`
+		TxRef     string  `json:"tx_ref"`
 	} `json:"data"`
 }
 
@@ -59,14 +56,11 @@ type chapaAPIError struct {
 	Errors  []string `json:"errors"` // Chapa sometimes returns an array of error strings
 }
 
-// --- SERVICE FUNCTIONS ---
-
 // InitializePayment calls the Chapa API to create a new transaction and get a checkout URL.
 func InitializePayment(req ChapaInitRequest) (string, error) {
 	chapaSecretKey := os.Getenv("CHAPA_SECRET_KEY")
 	if chapaSecretKey == "" {
-		// This is a critical configuration error.
-		log.Println("CRITICAL: CHAPA_SECRET_KEY environment variable is not set.")
+		log.Println("CRITICAL: CHAPA_SECRET_KEY environment variable is not set for payment initialization.")
 		return "", fmt.Errorf("server is not configured for payments (missing secret key)")
 	}
 
@@ -83,13 +77,11 @@ func InitializePayment(req ChapaInitRequest) (string, error) {
 		Post(chapaAPIBaseURL + "/transaction/initialize")
 
 	if err != nil {
-		// This is a network-level error (e.g., can't connect, DNS issue)
 		log.Printf("ERROR: Resty HTTP request to Chapa failed for Tx_Ref '%s': %v", req.TxRef, err)
 		return "", fmt.Errorf("could not connect to payment provider: %w", err)
 	}
 
 	if resp.IsError() {
-		// The API returned a non-2xx status code (e.g., 400, 401, 500)
 		log.Printf("ERROR: Chapa API Initialize Error for Tx_Ref '%s' - Status: %s, Message: '%s', Details: %v",
 			req.TxRef, resp.Status(), errorResp.Message, errorResp.Errors)
 		if errorResp.Message != "" {
@@ -99,8 +91,6 @@ func InitializePayment(req ChapaInitRequest) (string, error) {
 	}
 
 	if successResp.Status != "success" || successResp.Data.CheckoutURL == "" {
-		// The request was successful (200 OK), but Chapa denied the transaction
-		// for a business logic reason (e.g., invalid amount, currency not supported).
 		log.Printf("WARN: Chapa initialization was not successful for Tx_Ref '%s': Status '%s', Message: '%s'",
 			req.TxRef, successResp.Status, successResp.Message)
 		return "", fmt.Errorf("payment initialization failed: %s", successResp.Message)
@@ -113,7 +103,7 @@ func InitializePayment(req ChapaInitRequest) (string, error) {
 func VerifyChapaTransaction(txRef string) (bool, *ChapaVerifyResponse, error) {
 	chapaSecretKey := os.Getenv("CHAPA_SECRET_KEY")
 	if chapaSecretKey == "" {
-		log.Println("CRITICAL: CHAPA_SECRET_KEY environment variable is not set for verification.")
+		log.Println("CRITICAL: CHAPA_SECRET_KEY environment variable is not set for payment verification.")
 		return false, nil, fmt.Errorf("server is not configured for payment verification")
 	}
 

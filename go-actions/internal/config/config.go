@@ -12,10 +12,10 @@ type Config struct {
 	HasuraGraphQLEndpoint string
 	HasuraAdminSecret     string
 
-	ChapaSecretKey     string
-	ChapaWebhookSecret string
-	BackendPublicURL   string
-
+	ChapaSecretKey      string
+	ChapaWebhookSecret  string
+	BackendPublicURL    string
+	FrontendURL         string
 	CloudinaryCloudName string
 	CloudinaryAPIKey    string
 	CloudinaryAPISecret string
@@ -63,6 +63,9 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 	if cfg.BackendPublicURL, err = getEnv("BACKEND_PUBLIC_URL", true); err != nil {
+		return nil, err
+	}
+	if cfg.FrontendURL, err = getEnv("FRONTEND_URL", true); err != nil { // Added FrontendURL
 		return nil, err
 	}
 	if cfg.CloudinaryCloudName, err = getEnv("CLOUDINARY_CLOUD_NAME", true); err != nil {
