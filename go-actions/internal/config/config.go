@@ -11,11 +11,11 @@ type Config struct {
 	JWTSecretKey          string
 	HasuraGraphQLEndpoint string
 	HasuraAdminSecret     string
-	// StripeSecretKey       string
+
 	ChapaSecretKey     string
 	ChapaWebhookSecret string
 	BackendPublicURL   string
-	// ChapaSecretKey        string
+
 	CloudinaryCloudName string
 	CloudinaryAPIKey    string
 	CloudinaryAPISecret string
