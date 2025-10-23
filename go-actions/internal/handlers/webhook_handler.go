@@ -12,18 +12,14 @@ import (
 
 // HandleChapaWebhook handles the secure, server-to-server POST request.
 func (h *PaymentHandler) HandleChapaWebhook(c *gin.Context) {
-	// A simpler struct to reliably get the tx_ref from the POST body.
 	var body struct {
 		TxRef string `json:"tx_ref"`
 	}
-
 	if err := c.ShouldBindJSON(&body); err != nil || body.TxRef == "" {
 		log.Println("WARN: Chapa webhook (POST) received with invalid body or missing tx_ref.")
-		// Still return 200 OK so Chapa doesn't keep trying to send a bad request.
 		c.JSON(http.StatusOK, gin.H{"status": "ignored", "message": "Invalid payload"})
 		return
 	}
-
 	log.Printf("INFO: Verified Chapa webhook (POST) received for Tx_Ref: %s", body.TxRef)
 	h.processAndRecordPurchase(c, body.TxRef)
 }
@@ -34,18 +30,16 @@ func (h *PaymentHandler) HandleChapaRedirect(c *gin.Context) {
 	if txRef == "" {
 		txRef = c.Query("tx_ref")
 	}
-
 	if txRef == "" {
 		log.Println("WARN: Chapa redirect (GET) received without a transaction reference.")
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Transaction reference is missing"})
 		return
 	}
-
 	log.Printf("INFO: Chapa redirect (GET) received for Tx_Ref: %s", txRef)
 	h.processAndRecordPurchase(c, txRef)
 }
 
-// processAndRecordPurchase is a shared function to verify and save the transaction.
+// processAndRecordPurchase is the shared logic to finalize a purchase.
 func (h *PaymentHandler) processAndRecordPurchase(c *gin.Context, txRef string) {
 	isSuccess, chapaData, err := services.VerifyChapaTransaction(h.Config.ChapaSecretKey, txRef)
 	if err != nil {
@@ -54,9 +48,12 @@ func (h *PaymentHandler) processAndRecordPurchase(c *gin.Context, txRef string) 
 		return
 	}
 
+	// --- THIS IS THE IMPROVEMENT ---
+	// We now check the status from the API call, which is the most reliable source.
 	if !isSuccess {
-		log.Printf("INFO: Payment for Tx_Ref %s was not successful (Status: %s).", txRef, chapaData.Data.Status)
-		c.JSON(http.StatusOK, gin.H{"message": "Payment not successful"})
+		// This log will tell us exactly why Chapa thinks the payment failed.
+		log.Printf("INFO: Payment for Tx_Ref %s was NOT successful. Chapa API reports status: '%s'. No purchase recorded.", txRef, chapaData.Data.Status)
+		c.JSON(http.StatusOK, gin.H{"message": "Payment not successful"}) // Respond 200 so the browser doesn't show an error
 		return
 	}
 
@@ -89,11 +86,8 @@ func (h *PaymentHandler) processAndRecordPurchase(c *gin.Context, txRef string) 
         }`
 
 	variables := map[string]interface{}{
-		"user_id":               userID,
-		"recipe_id":             recipeID,
-		"chapa_transaction_ref": txRef,
-		"amount":                chapaData.Data.Amount,
-		"currency":              chapaData.Data.Currency,
+		"user_id": userID, "recipe_id": recipeID, "chapa_transaction_ref": txRef,
+		"amount": chapaData.Data.Amount, "currency": chapaData.Data.Currency,
 	}
 
 	if _, err := services.ExecuteGraphQLRequest(services.GraphQLRequest{Query: mutation, Variables: variables}); err != nil {
