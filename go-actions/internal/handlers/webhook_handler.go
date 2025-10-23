@@ -10,45 +10,43 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// HandleChapaWebhook handles the secure, server-to-server POST request from Chapa.
+// HandleChapaWebhook handles the secure, server-to-server POST request.
 func (h *PaymentHandler) HandleChapaWebhook(c *gin.Context) {
-	var eventData services.ChapaVerifyResponse
-	if err := c.ShouldBindJSON(&eventData); err != nil {
-		log.Printf("ERROR: Could not bind Chapa webhook JSON: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Invalid payload"})
+	// A simpler struct to reliably get the tx_ref from the POST body.
+	var body struct {
+		TxRef string `json:"tx_ref"`
+	}
+
+	if err := c.ShouldBindJSON(&body); err != nil || body.TxRef == "" {
+		log.Println("WARN: Chapa webhook (POST) received with invalid body or missing tx_ref.")
+		// Still return 200 OK so Chapa doesn't keep trying to send a bad request.
+		c.JSON(http.StatusOK, gin.H{"status": "ignored", "message": "Invalid payload"})
 		return
 	}
 
-	txRef := eventData.Data.TxRef
-	log.Printf("INFO: Verified Chapa webhook (POST) received for Tx_Ref: %s", txRef)
-
-	// Process the transaction data and record the purchase
-	h.processAndRecordPurchase(c, txRef)
+	log.Printf("INFO: Verified Chapa webhook (POST) received for Tx_Ref: %s", body.TxRef)
+	h.processAndRecordPurchase(c, body.TxRef)
 }
 
-// HandleChapaRedirect handles the GET request when the user's browser is redirected back from Chapa.
+// HandleChapaRedirect handles the GET request when the user's browser is redirected.
 func (h *PaymentHandler) HandleChapaRedirect(c *gin.Context) {
-	// In a GET request, the transaction reference is in the query parameters.
 	txRef := c.Query("trx_ref")
 	if txRef == "" {
 		txRef = c.Query("tx_ref")
 	}
 
 	if txRef == "" {
-		log.Println("WARN: Chapa redirect received without a transaction reference.")
+		log.Println("WARN: Chapa redirect (GET) received without a transaction reference.")
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Transaction reference is missing"})
 		return
 	}
 
 	log.Printf("INFO: Chapa redirect (GET) received for Tx_Ref: %s", txRef)
-
-	// Process the transaction reference and record the purchase
 	h.processAndRecordPurchase(c, txRef)
 }
 
-// processAndRecordPurchase is a shared function to verify a transaction and update the database.
+// processAndRecordPurchase is a shared function to verify and save the transaction.
 func (h *PaymentHandler) processAndRecordPurchase(c *gin.Context, txRef string) {
-	// We always call the Chapa API to get the authoritative status of the transaction.
 	isSuccess, chapaData, err := services.VerifyChapaTransaction(h.Config.ChapaSecretKey, txRef)
 	if err != nil {
 		log.Printf("ERROR: Chapa API verification failed for tx_ref '%s': %v", txRef, err)
@@ -79,7 +77,6 @@ func (h *PaymentHandler) processAndRecordPurchase(c *gin.Context, txRef string) 
 		return
 	}
 
-	// This mutation is idempotent due to the on_conflict clause in Hasura.
 	mutation := `
         mutation RecordPurchase($user_id: uuid!, $recipe_id: uuid!, $chapa_transaction_ref: String!, $amount: numeric!, $currency: String!) {
           insert_user_purchased_recipes_one(
