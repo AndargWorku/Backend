@@ -8,7 +8,7 @@ import (
 
 	"go-actions/internal/config"
 	"go-actions/internal/handlers"
-	"go-actions/internal/middleware" // You must have this middleware from previous answers
+	"go-actions/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,6 +29,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	webhooks := router.Group("/webhooks")
 	{
+
+		webhooks.GET("/chapa", paymentHandler.HandleChapaRedirect)
+
 		webhooks.POST("/chapa", middleware.VerifyChapaWebhook(cfg.ChapaWebhookSecret), paymentHandler.HandleChapaWebhook)
 	}
 

@@ -11,6 +11,8 @@ import (
 
 const chapaAPIBaseURL = "https://api.chapa.co/v1"
 
+// --- Structs for Chapa API Communication ---
+
 type ChapaInitRequest struct {
 	Amount      string                 `json:"amount"`
 	Currency    string                 `json:"currency"`
@@ -61,6 +63,9 @@ func (e *chapaAPIError) String() string {
 	return "An unknown payment provider error occurred"
 }
 
+// --- Service Functions ---
+
+// InitializePayment sends a request to Chapa to start a transaction.
 func InitializePayment(chapaSecretKey string, req ChapaInitRequest) (string, error) {
 	client := resty.New()
 	var successResp struct {
@@ -87,6 +92,34 @@ func InitializePayment(chapaSecretKey string, req ChapaInitRequest) (string, err
 		return "", fmt.Errorf("payment provider error: %s", errMsg)
 	}
 	return successResp.Data.CheckoutURL, nil
+}
+
+// VerifyChapaTransaction checks the authoritative status of a transaction with the Chapa API.
+// THIS IS THE MISSING FUNCTION.
+func VerifyChapaTransaction(chapaSecretKey, txRef string) (bool, *ChapaVerifyResponse, error) {
+	client := resty.New()
+	var successResp ChapaVerifyResponse
+	var errorResp chapaAPIError
+
+	verifyURL := fmt.Sprintf("%s/transaction/verify/%s", chapaAPIBaseURL, txRef)
+	log.Printf("INFO: Verifying Chapa transaction via API for TxRef: %s", txRef)
+
+	resp, err := client.R().
+		SetAuthToken(chapaSecretKey).
+		SetResult(&successResp).
+		SetError(&errorResp).
+		Get(verifyURL)
+
+	if err != nil {
+		log.Printf("ERROR: Chapa verification network request failed for TxRef %s: %v", txRef, err)
+		return false, nil, err
+	}
+	if resp.IsError() {
+		return false, nil, fmt.Errorf("chapa verification API error: %s", errorResp.String())
+	}
+
+	isSuccess := successResp.Data.Status == "success"
+	return isSuccess, &successResp, nil
 }
 
 // // File: internal/services/chapa.go
