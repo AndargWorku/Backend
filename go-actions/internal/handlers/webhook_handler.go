@@ -22,12 +22,10 @@ func (h *PaymentHandler) HandleChapaWebhook(c *gin.Context) {
 		return
 	}
 	log.Printf("INFO: Verified Chapa webhook (POST) received for Tx_Ref: %s", body.TxRef)
-	// We only process the purchase, no redirect is needed for a server-to-server call.
 	h.processAndRecordPurchase(body.TxRef)
 }
 
-// --- THIS IS THE FIX ---
-// HandleChapaRedirect now performs a real browser redirect to the frontend status page.
+// HandleChapaRedirect handles the GET request when the user's browser is redirected back from Chapa.
 func (h *PaymentHandler) HandleChapaRedirect(c *gin.Context) {
 	txRef := c.Query("trx_ref")
 	if txRef == "" {
@@ -36,14 +34,12 @@ func (h *PaymentHandler) HandleChapaRedirect(c *gin.Context) {
 
 	if txRef == "" {
 		log.Println("WARN: Chapa redirect (GET) received without a transaction reference.")
-		// Redirect to a failed status on the frontend if tx_ref is missing
 		c.Redirect(http.StatusFound, fmt.Sprintf("%s/payment/status?status=failed", h.Config.FrontendURL))
 		return
 	}
 
 	log.Printf("INFO: Chapa redirect (GET) received for Tx_Ref: %s", txRef)
 
-	// Process the purchase and get the result and recipe ID back.
 	success, recipeID := h.processAndRecordPurchase(txRef)
 
 	finalStatus := "failed"
@@ -54,6 +50,8 @@ func (h *PaymentHandler) HandleChapaRedirect(c *gin.Context) {
 	// Construct the final URL for the frontend status page.
 	redirectURL := fmt.Sprintf("%s/payment/status?status=%s&recipe_id=%s", h.Config.FrontendURL, finalStatus, recipeID)
 
+	// --- THIS LOG IS NEW ---
+	// This will show us the exact URL being used for the redirect in the logs.
 	log.Printf("INFO: Redirecting user's browser to: %s", redirectURL)
 
 	// Tell the browser to go to the frontend page.
@@ -65,12 +63,12 @@ func (h *PaymentHandler) processAndRecordPurchase(txRef string) (bool, string) {
 	isSuccess, chapaData, err := services.VerifyChapaTransaction(h.Config.ChapaSecretKey, txRef)
 	if err != nil {
 		log.Printf("ERROR: Chapa API verification failed for tx_ref '%s': %v", txRef, err)
-		return false, "" // Return failure and empty recipeID
+		return false, ""
 	}
 
 	if !isSuccess {
 		log.Printf("INFO: Payment for Tx_Ref %s was NOT successful. Chapa API reports status: '%s'.", txRef, chapaData.Data.Status)
-		return false, "" // Return failure and empty recipeID
+		return false, ""
 	}
 
 	log.Printf("INFO: Successful payment confirmed for Tx_Ref: %s.", txRef)
@@ -106,11 +104,11 @@ func (h *PaymentHandler) processAndRecordPurchase(txRef string) (bool, string) {
 
 	if _, err := services.ExecuteGraphQLRequest(services.GraphQLRequest{Query: mutation, Variables: variables}); err != nil {
 		log.Printf("ERROR: Failed to record purchase in Hasura for tx_ref '%s': %v", txRef, err)
-		return false, recipeID // Return failure but include recipeID for the redirect
+		return false, recipeID
 	}
 
 	log.Printf("INFO: Successfully recorded purchase for Tx_Ref '%s' in Hasura.", txRef)
-	return true, recipeID // Return SUCCESS and the recipeID
+	return true, recipeID
 }
 
 // // File: internal/handlers/webhook-handler.go
