@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"go-actions/internal/services"
 
@@ -40,49 +41,58 @@ func (h *PaymentHandler) HandleChapaRedirect(c *gin.Context) {
 
 	log.Printf("INFO: Chapa redirect (GET) received for Tx_Ref: %s", txRef)
 
-	success, recipeID := h.processAndRecordPurchase(txRef)
+	var success bool
+	var recipeID string
+	var attempts = 3
+
+	for i := 1; i <= attempts; i++ {
+		success, recipeID = h.processAndRecordPurchase(txRef)
+		if success {
+			log.Printf("INFO: Purchase verification succeeded on attempt %d for Tx_Ref: %s", i, txRef)
+			break
+		}
+		log.Printf("WARN: Purchase verification failed on attempt %d for Tx_Ref: %s. Retrying...", i, txRef)
+		time.Sleep(500 * time.Millisecond)
+	}
 
 	finalStatus := "failed"
 	if success {
 		finalStatus = "success"
+	} else {
+		log.Printf("ERROR: Purchase verification failed after %d attempts for Tx_Ref: %s.", attempts, txRef)
 	}
 
-	// Construct the final URL for the frontend status page.
 	redirectURL := fmt.Sprintf("%s/payment/status?status=%s&recipe_id=%s", h.Config.FrontendURL, finalStatus, recipeID)
 
-	// --- THIS LOG IS NEW ---
-	// This will show us the exact URL being used for the redirect in the logs.
 	log.Printf("INFO: Redirecting user's browser to: %s", redirectURL)
-
-	// Tell the browser to go to the frontend page.
 	c.Redirect(http.StatusFound, redirectURL)
 }
 
 // processAndRecordPurchase now returns (success bool, recipeID string)
 func (h *PaymentHandler) processAndRecordPurchase(txRef string) (bool, string) {
+	// --- THIS IS THE FIX ---
+	// Corrected h.Config.ChapaKey to h.Config.ChapaSecretKey
 	isSuccess, chapaData, err := services.VerifyChapaTransaction(h.Config.ChapaSecretKey, txRef)
 	if err != nil {
-		log.Printf("ERROR: Chapa API verification failed for tx_ref '%s': %v", txRef, err)
+		log.Printf("DEBUG: Chapa API verification call failed: %v", err)
 		return false, ""
 	}
 
 	if !isSuccess {
-		log.Printf("INFO: Payment for Tx_Ref %s was NOT successful. Chapa API reports status: '%s'.", txRef, chapaData.Data.Status)
+		log.Printf("DEBUG: Chapa API reports payment status is NOT 'success' (Status: '%s').", chapaData.Data.Status)
 		return false, ""
 	}
 
-	log.Printf("INFO: Successful payment confirmed for Tx_Ref: %s.", txRef)
-
 	meta := chapaData.Data.Meta
 	if meta == nil {
-		log.Printf("ERROR: Transaction for Tx_Ref %s missing 'meta' data.", txRef)
+		log.Printf("DEBUG: Transaction metadata is missing.")
 		return false, ""
 	}
 
 	userID, okUser := meta["user_id"].(string)
 	recipeID, okRecipe := meta["recipe_id"].(string)
 	if !okUser || !okRecipe {
-		log.Printf("ERROR: Transaction for Tx_Ref %s missing user_id or recipe_id in meta.", txRef)
+		log.Printf("DEBUG: UserID or RecipeID is missing from metadata.")
 		return false, ""
 	}
 
@@ -103,7 +113,7 @@ func (h *PaymentHandler) processAndRecordPurchase(txRef string) (bool, string) {
 	}
 
 	if _, err := services.ExecuteGraphQLRequest(services.GraphQLRequest{Query: mutation, Variables: variables}); err != nil {
-		log.Printf("ERROR: Failed to record purchase in Hasura for tx_ref '%s': %v", txRef, err)
+		log.Printf("DEBUG: Failed to record purchase in Hasura (might be a non-critical conflict): %v", err)
 		return false, recipeID
 	}
 
@@ -115,6 +125,7 @@ func (h *PaymentHandler) processAndRecordPurchase(txRef string) (bool, string) {
 // package handlers
 
 // import (
+// 	"fmt"
 // 	"log"
 // 	"net/http"
 
@@ -123,81 +134,187 @@ func (h *PaymentHandler) processAndRecordPurchase(txRef string) (bool, string) {
 // 	"github.com/gin-gonic/gin"
 // )
 
-// func HandleChapaWebhook(c *gin.Context) {
-// 	var txRef string
-// 	txRef = c.Query("trx_ref")
+// func (h *PaymentHandler) HandleChapaWebhook(c *gin.Context) {
+// 	var body struct {
+// 		TxRef string `json:"tx_ref"`
+// 	}
+// 	if err := c.ShouldBindJSON(&body); err != nil || body.TxRef == "" {
+// 		log.Println("WARN: Chapa webhook (POST) received with invalid body or missing tx_ref.")
+// 		c.JSON(http.StatusOK, gin.H{"status": "ignored"})
+// 		return
+// 	}
+// 	log.Printf("INFO: Verified Chapa webhook (POST) received for Tx_Ref: %s", body.TxRef)
+// 	h.processAndRecordPurchase(body.TxRef)
+// }
+
+// func (h *PaymentHandler) HandleChapaRedirect(c *gin.Context) {
+// 	txRef := c.Query("trx_ref")
 // 	if txRef == "" {
 // 		txRef = c.Query("tx_ref")
 // 	}
 
 // 	if txRef == "" {
-// 		log.Println("WARN: Chapa webhook received without a transaction reference. Ignoring.")
-// 		c.Status(http.StatusOK)
+// 		log.Println("WARN: Chapa redirect (GET) received without a transaction reference.")
+// 		c.Redirect(http.StatusFound, fmt.Sprintf("%s/payment/status?status=failed", h.Config.FrontendURL))
 // 		return
 // 	}
 
-// 	log.Printf("INFO: Chapa webhook received for Tx_Ref: %s", txRef)
+// 	log.Printf("INFO: Chapa redirect (GET) received for Tx_Ref: %s", txRef)
 
-// 	isSuccess, chapaData, err := services.VerifyChapaTransaction(txRef)
-// 	if err != nil {
-// 		log.Printf("ERROR: Chapa verification failed for tx_ref '%s': %v", txRef, err)
-// 		c.Status(http.StatusInternalServerError)
-// 		return
+// 	success, recipeID := h.processAndRecordPurchase(txRef)
+
+// 	finalStatus := "failed"
+// 	if success {
+// 		finalStatus = "success"
 // 	}
 
-// 	if isSuccess {
-// 		log.Printf("INFO: Successful payment confirmed for Tx_Ref: %s.", txRef)
+// 	redirectURL := fmt.Sprintf("%s/payment/status?status=%s&recipe_id=%s", h.Config.FrontendURL, finalStatus, recipeID)
 
-// 		if chapaData.Data.Meta == nil {
-// 			log.Printf("ERROR: Webhook for Tx_Ref %s missing 'meta' data.", txRef)
-// 			c.Status(http.StatusBadRequest)
-// 			return
-// 		}
+// 	// --- THIS LOG IS -NEW --
+// 	log.Printf("INFO: Redirecting user's browser to: %s", redirectURL)
 
-// 		userID, okUser := chapaData.Data.Meta["user_id"].(string)
-// 		recipeID, okRecipe := chapaData.Data.Meta["recipe_id"].(string)
-
-// 		if !okUser || !okRecipe {
-// 			log.Printf("ERROR: Webhook for Tx_Ref %s missing user_id or recipe_id in meta.", txRef)
-// 			c.Status(http.StatusBadRequest)
-// 			return
-// 		}
-
-// 		mutation := `
-//             mutation RecordPurchase($user_id: uuid!, $recipe_id: uuid!, $chapa_transaction_ref: String!, $amount: numeric!, $currency: String!) {
-//               insert_user_purchased_recipes_one(
-//                 object: {
-//                   user_id: $user_id,
-//                   recipe_id: $recipe_id,
-//                   chapa_transaction_ref: $chapa_transaction_ref,
-//                   amount_paid: $amount,
-//                   currency: $currency
-//                 },
-//                 on_conflict: {
-//                   constraint: user_purchased_recipes_user_id_recipe_id_key,
-//                   update_columns: [] # This means "do nothing" on conflict
-//                 }
-//               ) {
-//                 id # We still ask for the ID to confirm it worked
-//               }
-//             }`
-
-// 		variables := map[string]interface{}{
-// 			"user_id":               userID,
-// 			"recipe_id":             recipeID,
-// 			"chapa_transaction_ref": txRef,
-// 			"amount":                chapaData.Data.Amount,
-// 			"currency":              chapaData.Data.Currency,
-// 		}
-
-// 		if _, err := services.ExecuteGraphQLRequest(services.GraphQLRequest{Query: mutation, Variables: variables}); err != nil {
-// 			log.Printf("ERROR: Failed to record purchase in Hasura for tx_ref '%s': %v", txRef, err)
-// 		} else {
-// 			log.Printf("INFO: Successfully recorded (or confirmed existing) purchase for Tx_Ref '%s' in Hasura.", txRef)
-// 		}
-// 	} else {
-// 		log.Printf("INFO: Chapa verification for Tx_Ref %s was not successful (Status: %s).", txRef, chapaData.Data.Status)
-// 	}
-
-// 	c.Status(http.StatusOK)
+// 	c.Redirect(http.StatusFound, redirectURL)
 // }
+
+// func (h *PaymentHandler) processAndRecordPurchase(txRef string) (bool, string) {
+// 	isSuccess, chapaData, err := services.VerifyChapaTransaction(h.Config.ChapaSecretKey, txRef)
+// 	if err != nil {
+// 		log.Printf("ERROR: Chapa API verification failed for tx_ref '%s': %v", txRef, err)
+// 		return false, ""
+// 	}
+
+// 	if !isSuccess {
+// 		log.Printf("INFO: Payment for Tx_Ref %s was NOT successful. Chapa API reports status: '%s'.", txRef, chapaData.Data.Status)
+// 		return false, ""
+// 	}
+
+// 	log.Printf("INFO: Successful payment confirmed for Tx_Ref: %s.", txRef)
+
+// 	meta := chapaData.Data.Meta
+// 	if meta == nil {
+// 		log.Printf("ERROR: Transaction for Tx_Ref %s missing 'meta' data.", txRef)
+// 		return false, ""
+// 	}
+
+// 	userID, okUser := meta["user_id"].(string)
+// 	recipeID, okRecipe := meta["recipe_id"].(string)
+// 	if !okUser || !okRecipe {
+// 		log.Printf("ERROR: Transaction for Tx_Ref %s missing user_id or recipe_id in meta.", txRef)
+// 		return false, ""
+// 	}
+
+// 	mutation := `
+//         mutation RecordPurchase($user_id: uuid!, $recipe_id: uuid!, $chapa_transaction_ref: String!, $amount: numeric!, $currency: String!) {
+//           insert_user_purchased_recipes_one(
+//             object: {
+//               user_id: $user_id, recipe_id: $recipe_id, chapa_transaction_ref: $chapa_transaction_ref,
+//               amount_paid: $amount, currency: $currency
+//             },
+//             on_conflict: { constraint: user_purchased_recipes_user_id_recipe_id_key, update_columns: [] }
+//           ) { id }
+//         }`
+
+// 	variables := map[string]interface{}{
+// 		"user_id": userID, "recipe_id": recipeID, "chapa_transaction_ref": txRef,
+// 		"amount": chapaData.Data.Amount, "currency": chapaData.Data.Currency,
+// 	}
+
+// 	if _, err := services.ExecuteGraphQLRequest(services.GraphQLRequest{Query: mutation, Variables: variables}); err != nil {
+// 		log.Printf("ERROR: Failed to record purchase in Hasura for tx_ref '%s': %v", txRef, err)
+// 		return false, recipeID
+// 	}
+
+// 	log.Printf("INFO: Successfully recorded purchase for Tx_Ref '%s' in Hasura.", txRef)
+// 	return true, recipeID
+// }
+
+// // // File: internal/handlers/webhook-handler.go
+// // package handlers
+
+// // import (
+// // 	"log"
+// // 	"net/http"
+
+// // 	"go-actions/internal/services"
+
+// // 	"github.com/gin-gonic/gin"
+// // )
+
+// // func HandleChapaWebhook(c *gin.Context) {
+// // 	var txRef string
+// // 	txRef = c.Query("trx_ref")
+// // 	if txRef == "" {
+// // 		txRef = c.Query("tx_ref")
+// // 	}
+
+// // 	if txRef == "" {
+// // 		log.Println("WARN: Chapa webhook received without a transaction reference. Ignoring.")
+// // 		c.Status(http.StatusOK)
+// // 		return
+// // 	}
+
+// // 	log.Printf("INFO: Chapa webhook received for Tx_Ref: %s", txRef)
+
+// // 	isSuccess, chapaData, err := services.VerifyChapaTransaction(txRef)
+// // 	if err != nil {
+// // 		log.Printf("ERROR: Chapa verification failed for tx_ref '%s': %v", txRef, err)
+// // 		c.Status(http.StatusInternalServerError)
+// // 		return
+// // 	}
+
+// // 	if isSuccess {
+// // 		log.Printf("INFO: Successful payment confirmed for Tx_Ref: %s.", txRef)
+
+// // 		if chapaData.Data.Meta == nil {
+// // 			log.Printf("ERROR: Webhook for Tx_Ref %s missing 'meta' data.", txRef)
+// // 			c.Status(http.StatusBadRequest)
+// // 			return
+// // 		}
+
+// // 		userID, okUser := chapaData.Data.Meta["user_id"].(string)
+// // 		recipeID, okRecipe := chapaData.Data.Meta["recipe_id"].(string)
+
+// // 		if !okUser || !okRecipe {
+// // 			log.Printf("ERROR: Webhook for Tx_Ref %s missing user_id or recipe_id in meta.", txRef)
+// // 			c.Status(http.StatusBadRequest)
+// // 			return
+// // 		}
+
+// // 		mutation := `
+// //             mutation RecordPurchase($user_id: uuid!, $recipe_id: uuid!, $chapa_transaction_ref: String!, $amount: numeric!, $currency: String!) {
+// //               insert_user_purchased_recipes_one(
+// //                 object: {
+// //                   user_id: $user_id,
+// //                   recipe_id: $recipe_id,
+// //                   chapa_transaction_ref: $chapa_transaction_ref,
+// //                   amount_paid: $amount,
+// //                   currency: $currency
+// //                 },
+// //                 on_conflict: {
+// //                   constraint: user_purchased_recipes_user_id_recipe_id_key,
+// //                   update_columns: [] # This means "do nothing" on conflict
+// //                 }
+// //               ) {
+// //                 id # We still ask for the ID to confirm it worked
+// //               }
+// //             }`
+
+// // 		variables := map[string]interface{}{
+// // 			"user_id":               userID,
+// // 			"recipe_id":             recipeID,
+// // 			"chapa_transaction_ref": txRef,
+// // 			"amount":                chapaData.Data.Amount,
+// // 			"currency":              chapaData.Data.Currency,
+// // 		}
+
+// // 		if _, err := services.ExecuteGraphQLRequest(services.GraphQLRequest{Query: mutation, Variables: variables}); err != nil {
+// // 			log.Printf("ERROR: Failed to record purchase in Hasura for tx_ref '%s': %v", txRef, err)
+// // 		} else {
+// // 			log.Printf("INFO: Successfully recorded (or confirmed existing) purchase for Tx_Ref '%s' in Hasura.", txRef)
+// // 		}
+// // 	} else {
+// // 		log.Printf("INFO: Chapa verification for Tx_Ref %s was not successful (Status: %s).", txRef, chapaData.Data.Status)
+// // 	}
+
+// // 	c.Status(http.StatusOK)
+// // }

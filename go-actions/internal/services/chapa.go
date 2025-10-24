@@ -94,8 +94,6 @@ func InitializePayment(chapaSecretKey string, req ChapaInitRequest) (string, err
 	return successResp.Data.CheckoutURL, nil
 }
 
-// VerifyChapaTransaction checks the authoritative status of a transaction with the Chapa API.
-// THIS IS THE MISSING FUNCTION.
 func VerifyChapaTransaction(chapaSecretKey, txRef string) (bool, *ChapaVerifyResponse, error) {
 	client := resty.New()
 	var successResp ChapaVerifyResponse
