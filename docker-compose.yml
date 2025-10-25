@@ -4,7 +4,7 @@
 
 services:
   graphql-engine:
-    image: hasura/graphql-engine:v2.38.0 # Using a slightly newer, stable version
+    image: hasura/graphql-engine:v2.38.0 
     container_name: recipe_graphql_engine
     ports:
       - "8080:8080"
@@ -28,7 +28,8 @@ services:
       HASURA_GRAPHQL_LOG_LEVEL: "debug"
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: "Anonymous"
       HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: "false"
-      HASURA_GRAPHQL_CORS_DOMAIN: "http://localhost:3000"
+      # HASURA_GRAPHQL_CORS_DOMAIN: "http://localhost:3000"
+      HASURA_GRAPHQL_CORS_DOMAIN: "https://foo-17bo.vercel.app/"
 
   go-actions:
     container_name: recipe_go_actions
